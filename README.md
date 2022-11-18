@@ -42,8 +42,7 @@ In VS Code with Azure Functions extension installed:
   - `.funcignore` - functions ignore file with handy ignore options
   - `host.json` - host configuration file, mostly standard, interesting and important section is `customHandler`, especially `"enableForwardingHttpRequest": true` which is not added by default
   - `local.settings[.sample].json` - contains configuration which is needed for local development and debug, local settings should be excluded from Git to avoid secrets leak
-- `pkg/` - pkg sub package containing packaged consumed by the application handlers, this involes database interaction, validation, token generation and validation etc. 
-- `debug.go` - grabs Azure Functions settings to use when starting the handlers' server 
+- `pkg/` - pkg sub package containing packaged consumed by the application handlers, this involes database interaction, validation, token generation and validation etc.
 - `Makefile` - useful tasks/commands collection for project automation
 - `README` - contains basic project decription and documentation
 
@@ -53,8 +52,6 @@ In VS Code with Azure Functions extension installed:
 - Copy/rename `local.settings.sample.json` to `local.settings.json`.
 - Provide authentication parameters:
   - MONGODB_CONNECTION_URI
-
-[Add-in Only auth](https://go.spflow.com/auth/strategies/addin) is used as a sample.
 
 - Start the local server with `func start` in the `functions/` folder
 - Navigate to one of the URL endpoints printed in the console
@@ -182,8 +179,6 @@ http.HandleFunc("/api/HttpTrigger1", h.HTTPTrigger1)
 - [Create a Go function in Azure using VSCode](https://docs.microsoft.com/en-us/azure/azure-functions/create-first-function-vs-code-other)
 - [Functions Custom Handlers (Go)](https://github.com/Azure-Samples/functions-custom-handlers/tree/master/go)
 - [Serverless Go in Azure Functions with custom handlers (video)](https://m.youtube.com/watch?v=RPCEH247twU)
-- [Working with SharePoint in Go](https://go.spflow.com/samples/basic-crud)
-
 
 ## Author :black_nib:
 
