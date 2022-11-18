@@ -1,0 +1,203 @@
+# SERVERLESS AUTHENTICATION SYSTEM
+
+The goal of this project/repository is to demo how to develop a serverless authentication and authorization service using GoLang and Azure Services. ie. serveless storage and compute.
+
+![banner](assets/azurefunctions-cosmos.png)
+
+## Prerequisites
+
+- [Azure Functions Core Tools, v4](https://www.npmjs.com/package/azure-functions-core-tools)
+- [Go SDK](https://golang.org/dl/)
+- [Visual Studio Code](https://code.visualstudio.com) & [Azure Functions extension](https://marketplace.visualstudio.com/items?itemName=ms-azuretools.vscode-azurefunctions)
+- [Azure CLI](https://docs.microsoft.com/en-us/cli/azure/install-azure-cli) [optional]
+
+
+> Mac or Linux machine, or Windows WSL2 are preferred.
+> All the commands within the sample assumed running in `bash`.
+## Create Azure Function Resource
+
+> This flow is dev friendly when it comes to quick experiments. For production deployments please consider [infrastructure as code and automation](./infra) via DevOps.
+In VS Code with Azure Functions extension installed:
+
+- `CMD+Shift+P` type `Azure Functions: Create Function App in Azure... (Advanced)` and follow the wizard (further is the example of the steps)
+- Select dev subscription
+- Enter a globally unique name for the new function app
+- Select a runtime stack: `Custom Handler`
+- Select an OS: `Linux`
+- Select a hosting plan: `Consumption`
+- Create a new resource group
+- Enter the name of the new resource group
+- Create new storage account
+- Enter the name of the new storage account
+- Create new Application Insights resource
+- Enter the name of the new Application Insights resource
+- Select a location for new resources (closer to your location)
+
+> Don't forget to remove the resource group after experiments to avoid any unpredictable charges
+
+
+## Project structure highlights
+
+- `.vscode/` - VSCode settings folder, mostly standard.
+- `functions/` - everything related to Azure Functions, isolation makes things simpler while no mixing with custom handler related project files
+  - Functions folders, containing `function.json` file
+  - `.funcignore` - functions ignore file with handy ignore options
+  - `host.json` - host configuration file, mostly standard, interesting and important section is `customHandler`, especially `"enableForwardingHttpRequest": true` which is not added by default
+  - `local.settings[.sample].json` - contains configuration which is needed for local development and debug, local settings should be excluded from Git to avoid secrets leak
+- `pkg/` - pkg sub package containing packaged consumed by the application handlers, this involes database interaction, validation, token generation and validation etc.
+- `Makefile` - useful tasks/commands collection for project automation
+- `README` - contains basic project decription and documentation
+
+
+## Local start/debug
+
+- Copy/rename `local.settings.sample.json` to `local.settings.json`.
+- Provide authentication parameters:
+  - MONGODB_CONNECTION_URI
+
+- Start the local server with `func start` in the `functions/` folder
+- Navigate to one of the URL endpoints printed in the console
+
+
+## Debugging Go code
+
+For breaking points debugging in VSCode a number of approaches can be used: attaching to process or connecting to server. In most cases, one would prefer restarting Go server without stoping and restarting `func start` session. Also, it's simpler to place a breakpoint, switch to `main.go` file, and launch debug. Such a scenario can be covered with:
+
+```bash
+make debug
+```
+
+The local function app is started without actually starting the Go side-car server, but mimicking the process for functions core utility.
+
+Then, the Go application can be started or restarted as many times as needed, e.g. using `go run ./` from the `cmd/` folder.
+
+## Build and deploy
+
+1\. Run build command:
+
+```bash
+make build
+```
+
+The assumption is that a Linux plan was selected for the function app.
+
+The build creates `cmd` in the `functions/` folder with binary of the Go custom handler.
+
+2\. In VSCode,
+
+- `CMD+Shift+P` type `Azure Functions: Deploy to Function App...`
+- Select subscription
+- Select Function App in Azure
+- Confirm deployment
+
+## Configure environment variables
+
+In the Azure Function app, create and provide the following environment variables:
+
+- MONGODB_CONNECTION_URI
+
+## Overriding host's settings
+
+Azure Functions use .Net native approaches dealing with settings. Hierarchical settings can be overriden with environment variables.
+
+E.g., you need `cmd.exe` locally for windows but a Linux Functions host still needs `cmd` (without extention) in `hosts.json`, it can be redefined in `local.settings.json` with a value:
+
+```jsonc
+{
+  // ...
+  "Values": {
+    // ...
+    "AzureFunctionsJobHost__customHandler__description__defaultExecutablePath": "bin/server"
+  }
+}
+```
+
+## Adding new function
+
+1\. `CMD+Shift+P` type `Azure Functions: Create Function...`
+
+2\. Select a template for your function, e.g. `HTTP trigger`
+
+3\. Provide a function name. e.g. `HttpTrigger1`
+
+4\. Select authorization level, e.g. `Function`
+
+A function's folder and bindings definition is created `functions/HttpTrigger1/function.json`:
+
+```json
+{
+  "bindings": [
+    {
+      "authLevel": "function",
+      "type": "httpTrigger",
+      "direction": "in",
+      "name": "req",
+      "methods": ["get", "post"]
+    },
+    {
+      "type": "http",
+      "direction": "out",
+      "name": "res"
+    }
+  ]
+}
+```
+ 
+5\. Run `func start` in the `functions/` folder and follow via `http://localhost:7071/api/HttpTrigger1` for just created function's binding
+
+The Echo service handler will response with URL path `/api/HttpTrigger1`, that's because created function is not processed with specific route Go custom handler yet.
+
+`Ctrl+C` to stop running functions host.
+
+6\. Create `handlers/HttpTrigger1.go` and paste:
+
+```golang
+package handlers
+import (
+	"fmt"
+	"net/http"
+)
+// HTTPTrigger1 handles a function's logic
+func (h *Handlers) HTTPTrigger1(w http.ResponseWriter, r *http.Request) {
+	name := r.URL.Query().Get("name")
+	fmt.Fprintf(w, "Hello, %s!", name)
+}
+```
+
+7\. Bind a handler with a route in `mux.go` in API routes section:
+
+```golang
+http.HandleFunc("/api/HttpTrigger1", h.HTTPTrigger1)
+```
+
+8\. Run `make start` and navigate to `http://localhost:7071/api/HttpTrigger1?name=Function`
+
+`Hello, Function!` should be responded back.
+
+
+## Reference
+
+- [Azure Functions custom handlers](https://docs.microsoft.com/en-us/azure/azure-functions/functions-custom-handlers)
+- [Create a Go function in Azure using VSCode](https://docs.microsoft.com/en-us/azure/azure-functions/create-first-function-vs-code-other)
+- [Functions Custom Handlers (Go)](https://github.com/Azure-Samples/functions-custom-handlers/tree/master/go)
+- [Serverless Go in Azure Functions with custom handlers (video)](https://m.youtube.com/watch?v=RPCEH247twU)
+
+## Author :black_nib:
+
+- **Evans M Opilo** - [evansopilo](https://github.com/evansopilo)
+
+## License :lock:
+
+This repository contains a variety of content; some developed by Evans Opilo, and some from third-parties. The third-party content is distributed under the license provided by those parties.
+
+I am providing code and resources in this repository to you under an open source license. Because this is my personal repository, the license you receive to my code and resources is from me and not my employer.
+
+The content developed by Evans Opilo is distributed under the following license:
+
+## Text
+
+The text content is released under the CC-BY-NC-ND license. Read more at Creative Commons.
+
+## Code
+
+The code in this repository is released under the MIT license, see the [LICENSE](./LICENSE) file for details.
