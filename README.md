@@ -2,6 +2,8 @@
 
 The goal of this project/repository is to demo how to develop a serverless authentication and authorization service using GoLang and Azure Services. ie. serveless storage and compute.
 
+![banner](assets/azurefunctions-cosmos.png)
+
 ## Prerequisites
 
 - [Azure Functions Core Tools, v4](https://www.npmjs.com/package/azure-functions-core-tools)
