@@ -1,0 +1,9 @@
+{
+  "IsEncrypted": false,
+  "Values": {
+    "AzureWebJobsStorage": "",
+    "FUNCTIONS_WORKER_RUNTIME": "custom",
+    "MONGODB_CONNECTION_URI": "mongo_uri"
+  }
+}
+  
